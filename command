@@ -1,3 +1,5 @@
+installation (some packages may not mentioned)
+
 # Remove all logs form spark startup	
 In conf/log4j.properties change log4j.rootCategory=ERROR, console
 # Running spark job

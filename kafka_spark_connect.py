@@ -2,9 +2,21 @@ import sys
 from pyspark import SparkContext
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
+from kafka import KafkaProducer
+
+producer = KafkaProducer(bootstrap_servers='localhost:9092')
 
 reload(sys)
 sys.setdefaultencoding('utf-8')
+topic = 0
+def processer(lines):
+    counts = lines.flatMap(lambda line: line[1].split(" ") if len(line) > 0 else "") \
+                  .map(lambda word: (word, 1)) \
+                  .reduceByKey(lambda a, b: a+b).collect()
+    if (len(counts)):
+        producer.send("topic-send", "deepak kafka test")
+        producer.flush()
+        print(counts)
 
 if __name__ == "__main__":
 
@@ -14,13 +26,7 @@ if __name__ == "__main__":
     brokers, topic = sys.argv[1:]
     
     kvs = KafkaUtils.createDirectStream(ssc, [topic],{"metadata.broker.list": brokers})
-
-    lines = kvs.map(lambda x: x[1])
-    # print("========>", lines.pprint())
-    counts = lines.flatMap(lambda line: line.split(" ")) \
-                  .map(lambda word: (word, 1)) \
-                  .reduceByKey(lambda a, b: a+b)
-    counts.pprint()   
+    kvs.foreachRDD(processer)
 
     ssc.start()
     ssc.awaitTermination()
